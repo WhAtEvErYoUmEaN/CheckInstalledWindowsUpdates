@@ -13,7 +13,7 @@ if ( $updateHistoryCount -le 0 ){
 
 	[Nullable[datetime]]$FeatureUpdateInstallDate 
 	Try{
-		[datetime]$FeatureUpdateInstallDate = (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop | Select-Object InstallDate).InstallDate
+		[datetime]$FeatureUpdateInstallDate = (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).InstallDate
 	}Catch [Exception]{
 		[datetime]$FeatureUpdateInstallDate = ((get-date -year 1970 -month 1 -day 1 -hour 0 -minute 0 -second 0).AddSeconds((get-itemproperty -path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -name InstallDate).InstallDate)).ToLocalTime().AddHours((get-date -f zz))
 	}
