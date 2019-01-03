@@ -1,12 +1,81 @@
+<#
+	References for the Windows Update API:
+		https://docs.microsoft.com/en-us/windows/desktop/api/wuapi/
+		https://docs.microsoft.com/en-us/previous-versions/windows/desktop/aa386400(v%3dvs.85)
+
+	Parameters: (Can be given in any length, e.g. -Threshold. Thanks PS!)
+		ThresholdUpdateDays:		How many days should we look back for updates.
+									If no updates are found within the threshold we consider the system out-of-date
+
+		ThresholdFailedUpdateHours:	How many hours should we look back for updates.
+									If you run this script daily you can set it to 23-24 hours for example.
+
+		NoExit:						Controls wherever Powershell should hard exit with the given error code
+									Just append if you don't want it to, no value needed
+
+		NoCheckFailed:				Skips the check for failed updates. 
+									Excludes error code 1002.
+
+	Example usage:
+		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -Update 30 -Failed 168 -NoExit
+
+	Exit codes:
+		0:							All systems nominal.
+									Either there are successful updates or the installation / last feature update 
+									(e.g. 1803->1809) was in the given time period.
+
+		1001:						No updates have been installed in the given time period
+
+		1002:						There have been failed updates in the last 24 hours. Supersedes 1001.
+
+		1003:						Not a single successful update has been found in the logs. 
+									Usually a sign for a borked Windows Update.
+
+		1004:						The Windows Update log is completely empty.
+									Another sign for a borked Windows Update.
+
+		1005:						No connection could be made to the Windows Update service.
+									Yet another sign for a borked Windows Update.
+	
+	Below are all default values aswell as all defined strings including their placeholders.
+	Change them to fit your use case and/or language
+#>
+
+param(
+	[switch]$NoExit								= $false,
+	[switch]$NoCheckFailed						= $false,
+	[int]$ThresholdUpdateDays					= 45,
+	[int]$ThresholdFailedUpdateHours			= 23	
+)
+[string]$StringCannotConnectToWindowsUpdate		= "Cannot connect to Windows Update service"
+[string]$StringFeatureUpdate					= "Last feature update was {0} days ago."
+[string]$StringNoUpdatesFound					= "No updates found in update history."
+[string]$StringNoSuccessfulUpdate				= "No successful update found in update history."
+[string]$StringUpdatesWaitingForInstallation	= "{0} updates waiting for installation/reboot:`n{1}"
+[string]$StringErrorWhileInstallingUpdates		= "Error while installing {0} updates:`n{1}"
+[string]$StringLastUpdateInstalledon			= "Last update installed on {0} ({1})"
+[string]$StringNoUpdatesInstalledInTimePeriod	= "No updates have been installed within the last $ThresholdUpdateDays days"
+[string]$StringNoUpdatesFailed					= "No updates failed to install."
+[string]$StringUpdatesInstalledinTimePeriod		= "{0} installed updates in the last $ThresholdUpdateDays days:`n{1}"
+
+<# -- -- -- -- -- -- -- -- #>
+
+function ScriptExit{
+	param([int]$ScriptExitCode)
+	if (!$NoExit){
+		$host.SetShouldExit($ScriptExitCode)
+		exit $ScriptExitCode
+	}
+}
+
 try{
 	$session = [activator]::CreateInstance([type]::GetTypeFromProgID("Microsoft.Update.Session",$ComputerName))
 	$updateSearcher = $session.CreateUpdateSearcher()
 	$updateHistoryCount = $updateSearcher.GetTotalHistoryCount()
 }catch [Exception]{
-		Write-Host "Cannot connect to Windows Update service"
+		Write-Host $StringCannotConnectToWindowsUpdate
 		Write-Host $_.Exception.Message
-		$host.SetShouldExit(1005) 
-		exit 1005
+		ScriptExit 1005
 }
 
 if ( $updateHistoryCount -le 0 ){
@@ -20,13 +89,11 @@ if ( $updateHistoryCount -le 0 ){
 	
 	if ( ($FeatureUpdateInstallDate.installDate -gt (Get-Date).AddDays(-45)) -and ($NULL -ne $FeatureUpdateInstallDate) ){
 		$FeatureUpdateDateDiff = [int][Math]::Ceiling((New-Timespan -Start $FeatureUpdateInstallDate.installDate -End (Get-Date) ).TotalDays)
-		Write-Host "Last feature update was $FeatureUpdateDateDiff days ago."
-		$host.SetShouldExit(0) 
-		exit 0
+		Write-Host ($StringFeatureUpdate -f $FeatureUpdateDateDiff)
+		ScriptExit 0
 	} else {
-		Write-Host "No updates found in update history."
-		$host.SetShouldExit(1004) 
-		exit 1005
+		Write-Host $StringNoUpdatesFound
+		ScriptExit 1004
 	}
 }
 
@@ -54,7 +121,7 @@ foreach ($Upd in $updateHistory) {
     }
 	
 	if ((($Upd.operation -eq 1 -and $Upd.resultcode -eq 4) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 5)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) {
-		if (([DateTime]$Upd.Date) -gt (Get-Date).AddHours(-23)){
+		if (([DateTime]$Upd.Date) -gt (Get-Date).AddHours(-$ThresholdFailedUpdateHours)){
 			$FailedUpdates += $Upd.Title + "`n"
 			$FailedUpdatesCount++
 		}
@@ -62,7 +129,7 @@ foreach ($Upd in $updateHistory) {
 		$FailedUpdatesTotalCount++
     }
 	
-	if (((($Upd.operation -eq 1 -and $Upd.resultcode -eq 2) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 3)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) -and ([DateTime]$Upd.Date) -gt (Get-Date).AddDays(-45)) {
+	if (((($Upd.operation -eq 1 -and $Upd.resultcode -eq 2) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 3)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) -and ([DateTime]$Upd.Date) -gt (Get-Date).AddDays(-$ThresholdUpdateDays)) {
         $InstalledUpdates += ([DateTime]$Upd.Date).ToShortDateString() + " | " + $Upd.Title + "`n"
         $UpdatesWithinLast2Months++
     }
@@ -76,37 +143,30 @@ foreach ($Upd in $updateHistory) {
 [string]$LastUpdateAtDate = $LastUpdateAt.ToLongDateString()
 
 if ($LastUpdateAt -eq (Get-Date -Date "1970-01-01 00:00:00Z").ToUniversalTime()){
-	Write-Host "No successful update found in update history.`n"
+	Write-Host $StringNoSuccessfulUpdate`n
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host "$UpdatesToInstallCount waiting for installation/reboot:`n$UpdatesToInstall"
+		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
 	if ($FailedUpdatesTotalCount -gt 0){
-		Write-Host "Error while installing $FailedUpdatesTotalCount updates:`n$FailedUpdatesTotal"
+		Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesTotalCount, $FailedUpdatesTotal)
 	}
-	$host.SetShouldExit(1003) 
-    exit 1003
-}elseif ( $FailedUpdatesCount -gt 0 ){
-    Write-Host "Error while installing  $FailedUpdatesCount updates:`n$FailedUpdates"
-	Write-Host "Last update installed on $LastUpdateAtDate ($LastUpdate)"
-	$host.SetShouldExit(1002) 
-    exit 1002
+	ScriptExit 1003
+}elseif ( $FailedUpdatesCount -gt 0 -and !$NoCheckFailed ){
+    Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesCount, $FailedUpdates)
+	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
+	ScriptExit 1002
 }elseif ( $UpdatesWithinLast2Months -le 0 ){
-    Write-Host "No updates have been installed within the last 45 days`n"
+    Write-Host ($StringNoUpdatesInstalledInTimePeriod) `n
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host "$UpdatesToInstallCount waiting for installation/reboot:`n$UpdatesToInstall"
+		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
-	Write-Host "Last update installed on $LastUpdateAtDate ($LastUpdate)"
-	$host.SetShouldExit(1001) 
-	exit 1001
+	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
+	ScriptExit 1001
 }else{
-    Write-Host "No updates failed to install.`n"
-	Write-Host "$UpdatesWithinLast2Months installed updates in the last 45 days:`n$InstalledUpdates"
+    Write-Host $StringNoUpdatesFailed `n
+	Write-Host ($StringUpdatesInstalledinTimePeriod -f $UpdatesWithinLast2Months, $InstalledUpdates)
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host "$UpdatesToInstallCount waiting for installation/reboot:`n$UpdatesToInstall"
+		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
-	$host.SetShouldExit(0) 
-	exit 0
+	ScriptExit 0
 }
-
-# https://docs.microsoft.com/en-us/windows/desktop/api/wuapi/
-# https://docs.microsoft.com/en-us/previous-versions/windows/desktop/aa386400(v%3dvs.85)
