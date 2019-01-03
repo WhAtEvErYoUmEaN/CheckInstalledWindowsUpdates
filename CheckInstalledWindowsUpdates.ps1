@@ -99,7 +99,7 @@ if ( $updateHistoryCount -le 0 ){
 		[datetime]$FeatureUpdateInstallDate = ((get-date -year 1970 -month 1 -day 1 -hour 0 -minute 0 -second 0).AddSeconds((get-itemproperty -path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -name InstallDate).InstallDate)).ToLocalTime().AddHours((get-date -f zz))
 	}
 	
-	if ( ($FeatureUpdateInstallDate.installDate -gt (Get-Date).AddDays(-45)) -and ($NULL -ne $FeatureUpdateInstallDate) ){
+	if ( ($FeatureUpdateInstallDate.installDate -gt (Get-Date).AddDays(-$ThresholdUpdateDays)) -and ($NULL -ne $FeatureUpdateInstallDate) ){
 		$FeatureUpdateDateDiff = [int][Math]::Ceiling((New-Timespan -Start $FeatureUpdateInstallDate.installDate -End (Get-Date) ).TotalDays)
 		Write-Host ($StringFeatureUpdate -f $FeatureUpdateDateDiff)
 		ScriptExit 0
