@@ -115,10 +115,10 @@ $updateHistory = $updateSearcher.QueryHistory(0, $updateHistoryCount)
 [string]$LastUpdate = ""
 
 foreach ($Upd in $updateHistory) {
-    if ((($Upd.operation -eq 1 -and $Upd.resultcode -eq 0) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 1)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) {
-        $UpdatesToInstall += $Upd.Title + "`n"
-        $UpdatesToInstallCount++
-    }
+	if ((($Upd.operation -eq 1 -and $Upd.resultcode -eq 0) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 1)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) {
+		$UpdatesToInstall += $Upd.Title + "`n"
+		$UpdatesToInstallCount++
+	}
 	
 	if ((($Upd.operation -eq 1 -and $Upd.resultcode -eq 4) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 5)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) {
 		if (([DateTime]$Upd.Date) -gt (Get-Date).AddHours(-$ThresholdFailedUpdateHours)){
@@ -127,12 +127,12 @@ foreach ($Upd in $updateHistory) {
 		}
 		$FailedUpdatesTotal += $Upd.Title + "`n"
 		$FailedUpdatesTotalCount++
-    }
+	}
 	
 	if (((($Upd.operation -eq 1 -and $Upd.resultcode -eq 2) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 3)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) -and ([DateTime]$Upd.Date) -gt (Get-Date).AddDays(-$ThresholdUpdateDays)) {
-        $InstalledUpdates += ([DateTime]$Upd.Date).ToShortDateString() + " | " + $Upd.Title + "`n"
-        $UpdatesWithinLast2Months++
-    }
+		$InstalledUpdates += ([DateTime]$Upd.Date).ToShortDateString() + " | " + $Upd.Title + "`n"
+		$UpdatesWithinLast2Months++
+	}
 	
 	if (((($Upd.operation -eq 1 -and $Upd.resultcode -eq 2) -or ($Upd.operation -eq 1 -and $Upd.resultcode -eq 3)) -and (($Upd.ClientApplicationID -eq "UpdateOrchestrator") -or ($Upd.ClientApplicationID -eq "AutomaticUpdates") -or ($Upd.ClientApplicationID -eq "AutomaticUpdatesWuApp"))) -and ([DateTime]$Upd.Date -gt $LastUpdateAt)){
 		$LastUpdateAt = [DateTime]$Upd.Date
@@ -152,18 +152,18 @@ if ($LastUpdateAt -eq (Get-Date -Date "1970-01-01 00:00:00Z").ToUniversalTime())
 	}
 	ScriptExit 1003
 }elseif ( $FailedUpdatesCount -gt 0 -and !$NoCheckFailed ){
-    Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesCount, $FailedUpdates)
+	Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesCount, $FailedUpdates)
 	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
 	ScriptExit 1002
 }elseif ( $UpdatesWithinLast2Months -le 0 ){
-    Write-Host ($StringNoUpdatesInstalledInTimePeriod) `n
+	Write-Host ($StringNoUpdatesInstalledInTimePeriod) `n
 	if ($UpdatesToInstallCount -gt 0){
 		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
 	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
 	ScriptExit 1001
 }else{
-    Write-Host $StringNoUpdatesFailed `n
+	Write-Host $StringNoUpdatesFailed `n
 	Write-Host ($StringUpdatesInstalledinTimePeriod -f $UpdatesWithinLast2Months, $InstalledUpdates)
 	if ($UpdatesToInstallCount -gt 0){
 		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
