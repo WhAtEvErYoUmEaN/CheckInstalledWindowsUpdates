@@ -10,3 +10,12 @@ All documentation is in the script itself.
 Normally only backwards compatibility is an issue, so this is written with PowerShell 2.0 in mind. Should work for future Windows/PowerShell versions without issues.
 
 Does not require administrative rights.
+
+#### Example:
+
+Script output:  
+![](https://i.imgur.com/EiXE8E4.png)
+
+Windows Update:  
+![](https://i.imgur.com/FnSwX8Z.png)  
+![](https://i.imgur.com/d93OcAq.png)
