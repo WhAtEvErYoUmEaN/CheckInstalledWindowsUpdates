@@ -3,7 +3,7 @@
 		https://docs.microsoft.com/en-us/windows/desktop/api/wuapi/
 		https://docs.microsoft.com/en-us/previous-versions/windows/desktop/aa386400(v%3dvs.85)
 
-	Parameters: (Can be given in any length, e.g. -Threshold. Thanks PS!)
+	Parameters: (Can be given in any length, e.g. -ThresholdUpdate. Thanks PS!)
 		ThresholdUpdateDays:		How many days should we look back for updates.
 						If no updates are found within the threshold we consider the system out-of-date
 
@@ -17,7 +17,7 @@
 						Excludes error code 1002.
 
 	Example usage:
-		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -Update 30 -Failed 168 -NoExit
+		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -ThresholdUpdate 30 -ThresholdFailedUpdate 168 -NoExit
 
 	Exit codes:
 		0:				All systems nominal.
