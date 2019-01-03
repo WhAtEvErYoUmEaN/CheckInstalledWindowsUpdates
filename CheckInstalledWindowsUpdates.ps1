@@ -68,13 +68,25 @@ function ScriptExit{
 	}
 }
 
+function Notify{
+	param(
+		[switch]$Error,
+		[string]$Message
+	)
+	if($Error){
+		Write-Host $Message -ForegroundColor red -BackgroundColor black
+	}else{
+		Write-Host $Message -ForegroundColor yellow
+	}
+}
+
 try{
 	$session = [activator]::CreateInstance([type]::GetTypeFromProgID("Microsoft.Update.Session",$ComputerName))
 	$updateSearcher = $session.CreateUpdateSearcher()
 	$updateHistoryCount = $updateSearcher.GetTotalHistoryCount()
 }catch [Exception]{
-		Write-Host $StringCannotConnectToWindowsUpdate
-		Write-Host $_.Exception.Message
+		Notify -Error $StringCannotConnectToWindowsUpdate
+		Notify -Error $_.Exception.Message
 		ScriptExit 1005
 }
 
@@ -92,7 +104,7 @@ if ( $updateHistoryCount -le 0 ){
 		Write-Host ($StringFeatureUpdate -f $FeatureUpdateDateDiff)
 		ScriptExit 0
 	} else {
-		Write-Host $StringNoUpdatesFound
+		Notify -Error $StringNoUpdatesFound
 		ScriptExit 1004
 	}
 }
@@ -143,30 +155,30 @@ foreach ($Upd in $updateHistory) {
 [string]$LastUpdateAtDate = $LastUpdateAt.ToLongDateString()
 
 if ($LastUpdateAt -eq (Get-Date -Date "1970-01-01 00:00:00Z").ToUniversalTime()){
-	Write-Host $StringNoSuccessfulUpdate`n
+	Notify -Error $StringNoSuccessfulUpdate`n
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
+		Notify ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
 	if ($FailedUpdatesTotalCount -gt 0){
-		Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesTotalCount, $FailedUpdatesTotal)
+		Notify ($StringErrorWhileInstallingUpdates -f $FailedUpdatesTotalCount, $FailedUpdatesTotal)
 	}
 	ScriptExit 1003
 }elseif ( $FailedUpdatesCount -gt 0 -and !$NoCheckFailed ){
-	Write-Host ($StringErrorWhileInstallingUpdates -f $FailedUpdatesCount, $FailedUpdates)
-	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
+	Notify -Error ($StringErrorWhileInstallingUpdates -f $FailedUpdatesCount, $FailedUpdates)
+	Notify ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
 	ScriptExit 1002
 }elseif ( $UpdatesWithinLast2Months -le 0 ){
-	Write-Host ($StringNoUpdatesInstalledInTimePeriod) `n
+	Notify -Error ($StringNoUpdatesInstalledInTimePeriod) `n
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
+		Notify ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
-	Write-Host ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
+	Notify ($StringLastUpdateInstalledon -f $LastUpdateAtDate, $LastUpdate)
 	ScriptExit 1001
 }else{
 	Write-Host $StringNoUpdatesFailed `n
 	Write-Host ($StringUpdatesInstalledinTimePeriod -f $UpdatesWithinLast2Months, $InstalledUpdates)
 	if ($UpdatesToInstallCount -gt 0){
-		Write-Host ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
+		Notify ($StringUpdatesWaitingForInstallation -f $UpdatesToInstallCount, $UpdatesToInstall)
 	}
 	ScriptExit 0
 }
