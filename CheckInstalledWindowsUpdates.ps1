@@ -64,8 +64,8 @@ function ScriptExit{
 	param([int]$ScriptExitCode)
 	if (!$NoExit){
 		$host.SetShouldExit($ScriptExitCode)
-		exit $ScriptExitCode
 	}
+	exit $ScriptExitCode
 }
 
 function Notify{
