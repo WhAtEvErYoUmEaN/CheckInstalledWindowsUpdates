@@ -5,58 +5,58 @@
 
 	Parameters: (Can be given in any length, e.g. -Threshold. Thanks PS!)
 		ThresholdUpdateDays:		How many days should we look back for updates.
-									If no updates are found within the threshold we consider the system out-of-date
+						If no updates are found within the threshold we consider the system out-of-date
 
 		ThresholdFailedUpdateHours:	How many hours should we look back for updates.
-									If you run this script daily you can set it to 23-24 hours for example.
+						If you run this script daily you can set it to 23-24 hours for example.
 
-		NoExit:						Controls wherever Powershell should hard exit with the given error code
-									Just append if you don't want it to, no value needed
+		NoExit:				Controls wherever Powershell should hard exit with the given error code
+						Just append if you don't want it to, no value needed
 
-		NoCheckFailed:				Skips the check for failed updates. 
-									Excludes error code 1002.
+		NoCheckFailed:			Skips the check for failed updates. 
+						Excludes error code 1002.
 
 	Example usage:
 		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -Update 30 -Failed 168 -NoExit
 
 	Exit codes:
-		0:							All systems nominal.
-									Either there are successful updates or the installation / last feature update 
-									(e.g. 1803->1809) was in the given time period.
+		0:				All systems nominal.
+						Either there are successful updates or the installation / last feature update 
+						(e.g. 1803->1809) was in the given time period.
 
-		1001:						No updates have been installed in the given time period
+		1001:				No updates have been installed in the given time period
 
-		1002:						There have been failed updates in the last 24 hours. Supersedes 1001.
+		1002:				There have been failed updates in the last 24 hours. Supersedes 1001.
 
-		1003:						Not a single successful update has been found in the logs. 
-									Usually a sign for a borked Windows Update.
+		1003:				Not a single successful update has been found in the logs. 
+						Usually a sign for a borked Windows Update.
 
-		1004:						The Windows Update log is completely empty.
-									Another sign for a borked Windows Update.
+		1004:				The Windows Update log is completely empty.
+						Another sign for a borked Windows Update.
 
-		1005:						No connection could be made to the Windows Update service.
-									Yet another sign for a borked Windows Update.
+		1005:				No connection could be made to the Windows Update service.
+						Yet another sign for a borked Windows Update.
 	
 	Below are all default values aswell as all defined strings including their placeholders.
 	Change them to fit your use case and/or language
 #>
 
 param(
-	[switch]$NoExit								= $false,
-	[switch]$NoCheckFailed						= $false,
-	[int]$ThresholdUpdateDays					= 45,
-	[int]$ThresholdFailedUpdateHours			= 23	
+	[switch]$NoExit				= $false,
+	[switch]$NoCheckFailed			= $false,
+	[int]$ThresholdUpdateDays		= 45,
+	[int]$ThresholdFailedUpdateHours	= 23	
 )
-[string]$StringCannotConnectToWindowsUpdate		= "Cannot connect to Windows Update service"
-[string]$StringFeatureUpdate					= "Last feature update was {0} days ago."
-[string]$StringNoUpdatesFound					= "No updates found in update history."
-[string]$StringNoSuccessfulUpdate				= "No successful update found in update history."
+[string]$StringCannotConnectToWindowsUpdate	= "Cannot connect to Windows Update service"
+[string]$StringFeatureUpdate			= "Last feature update was {0} days ago."
+[string]$StringNoUpdatesFound			= "No updates found in update history."
+[string]$StringNoSuccessfulUpdate		= "No successful update found in update history."
 [string]$StringUpdatesWaitingForInstallation	= "{0} updates waiting for installation/reboot:`n{1}"
-[string]$StringErrorWhileInstallingUpdates		= "Error while installing {0} updates:`n{1}"
-[string]$StringLastUpdateInstalledon			= "Last update installed on {0} ({1})"
+[string]$StringErrorWhileInstallingUpdates	= "Error while installing {0} updates:`n{1}"
+[string]$StringLastUpdateInstalledon		= "Last update installed on {0} ({1})"
 [string]$StringNoUpdatesInstalledInTimePeriod	= "No updates have been installed within the last $ThresholdUpdateDays days"
-[string]$StringNoUpdatesFailed					= "No updates failed to install."
-[string]$StringUpdatesInstalledinTimePeriod		= "{0} installed updates in the last $ThresholdUpdateDays days:`n{1}"
+[string]$StringNoUpdatesFailed			= "No updates failed to install."
+[string]$StringUpdatesInstalledinTimePeriod	= "{0} installed updates in the last $ThresholdUpdateDays days:`n{1}"
 
 <# -- -- -- -- -- -- -- -- #>
 
