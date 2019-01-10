@@ -17,7 +17,7 @@
 						Excludes error code 1002.
 
 	Example usage:
-		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -ThresholdUpdate 30 -ThresholdFailedUpdate 168 -NoExit
+		powershell -ExecutionPolicy ByPass -File CheckInstalledWindowsUpdates.ps1 -ThresholdUpdate 30 -ThresholdFailedUpdateHours 168 -NoExit
 
 	Exit codes:
 		0:				All systems nominal.
